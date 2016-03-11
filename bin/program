@@ -15,6 +15,9 @@ $COUCHDB_USER = $COUCHDB_PASS
 credentials = true
 origins = http://aqueous-thicket-68007.herokuapp.com, https://aqueous-thicket-68007.herokuapp.com
 
+[httpd_global_handlers]
+_suggest = {couch_httpd_misc_handlers, handle_utils_dir_req, "/app/www/"}
+
 EOM
 
 mkdir -p /app/.apt/var/run/couchdb/
@@ -22,5 +25,4 @@ find . -type f -name "*" -exec sed -i'' -e "s#/usr/#/app/.apt/usr/#g" {} +
 find . -type f -name "*" -exec sed -i'' -e "s#/etc/#/app/.apt/etc/#g" {} +
 find . -type f -name "*" -exec sed -i'' -e "s#/var/#/app/.apt/var/#g" {} +
 
-python -c 'print "DON"'
 couchdb

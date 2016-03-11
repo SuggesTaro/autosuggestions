@@ -1,0 +1,82 @@
+<!doctype html>
+<!--[if IE 7 ]>		 <html class="no-js ie ie7 lte7 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>		 <html class="no-js ie ie8 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 9 ]>		 <html class="no-js ie ie9 lte9>" lang="en-US"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head data-live-domain="jquery.com">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>PouchDB</title>
+
+
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery/css/base.css?v=1">
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery.com/style.css">
+    
+
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/modernizr.custom.2.8.3.min.js"></script>
+    
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-table.min.css">
+    
+
+</head>
+<body>
+    <div class="content">
+        <div class="col-md-12">
+            <hr>
+            
+            
+            <div class="col-md-12">
+                <div id="keyword-div" class="input-group">
+                  <input id="search-keyword" class="form-control autosuggest-here" placeholder="文字をご入力下さい・・・">
+                  <span class="input-group-btn">
+                      <button id="btn-search" class="btn"> 適用</button>
+                  </span>
+                  
+                </div>
+            </div>
+            
+            
+            <div id='suggestion-box' class="hidden" >
+                <div class="col-md-12">
+                    <div class="col-md-6" style="padding: 0;">
+                        <table id="history-table" data-toggle="table" >
+                            <thead>
+                                <tr>
+                                    <th data-field="text"> 
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="col-md-6" style="padding: 0;">
+                        <table id="suggesstion-table" data-toggle="table" >
+                            <thead>
+                                <tr>
+                                    <th data-field="text" >
+                                    </th>
+                                </tr>
+                            </thead>
+                         </table>
+                    </div>
+                </div>    
+            </div>
+            
+        </div>
+            
+    </div>
+</body>
+    <script src="//code.jquery.com/jquery-1.11.3.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/plugins.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/main.js"></script>
+    <script src="js/bootstrap-table.min.js"></script>
+    <script src="js/pouchdb-5.2.1.min.js"></script>
+    <script src="js/pouchdb.find.min.js"></script>
+    
+    <!--autosuggest-->
+    <script src="js/autosuggest.js"></script>
+
+</html>

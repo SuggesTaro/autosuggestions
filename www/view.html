@@ -1,0 +1,94 @@
+<!doctype html>
+<!--[if IE 7 ]>		 <html class="no-js ie ie7 lte7 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>		 <html class="no-js ie ie8 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 9 ]>		 <html class="no-js ie ie9 lte9>" lang="en-US"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head data-live-domain="jquery.com">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>DB Views</title>
+
+
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery/css/base.css?v=1">
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery.com/style.css">
+    
+
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/modernizr.custom.2.8.3.min.js"></script>
+    
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-table.min.css">
+    
+
+</head>
+<body>
+    <div class="content">
+        <div class="col-md-12">
+            
+            <hr>
+            <h4>Keywords</h4>
+            <hr>
+            <div class="col-md-12">
+                <table id="db-keywords-table" data-toggle="table" >
+                    <thead>
+                        <tr>
+                            <th data-field="_id">ID</th>
+                            <!--<th data-field="text">Keyword</th>-->
+                            <th data-field="keyword">Keyword</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            
+            <br>
+            <hr>
+            <h4>Sentences</h4>
+            <hr>
+            <div class="col-md-12">
+                <table id="db-sentences-table" data-toggle="table" >
+                    <thead>
+                        <tr>
+                            <th data-field="keyword_id">Keyword ID</th>
+                            <th data-field="sentence">Sentence</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <br>
+            <hr>
+            <h4>Similar Keywords</h4>
+            <hr>
+            <div class="col-md-12">
+                <table id="db-similar-keywords-table" data-toggle="table" >
+                    <thead>
+                        <tr>
+                            <th data-field="_id">Keyword A</th>
+                            <th data-field="keyword_a">Keyword A</th>
+                            <!--<th data-field="keyword_id_a">Keyword A</th>-->
+                            <th data-field="keyword_b">Keyword B</th>
+                            <!--<th data-field="keyword_id_b">Keyword B</th>-->
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            
+        </div>
+            
+    </div>
+</body>
+    <script src="//code.jquery.com/jquery-1.11.3.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/plugins.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/main.js"></script>
+    <script src="js/bootstrap-table.min.js"></script>
+    <script src="js/pouchdb-5.2.1.min.js"></script>
+    <script src="js/pouchdb.find.min.js"></script>
+    <script src="js/autosuggest.js"></script>
+    <script src="js/view.js"></script>
+    
+    <script>
+       
+    </script>
+
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<!--[if IE 7 ]>		 <html class="no-js ie ie7 lte7 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>		 <html class="no-js ie ie8 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 9 ]>		 <html class="no-js ie ie9 lte9>" lang="en-US"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head data-live-domain="jquery.com">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>PouchDB</title>
+
+
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery/css/base.css?v=1">
+    <link rel="stylesheet" href="//jquery.com/jquery-wp-content/themes/jquery.com/style.css">
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/modernizr.custom.2.8.3.min.js"></script>
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-table.min.css">
+    
+
+</head>
+<body>
+    Bulk KEYWORDS operations<br />
+    Keywords:
+    <button onclick='show()'>Show</button><br>
+    <div id="data"></div><br>
+    
+    <input id="keyword_a"><input id="keyword_b"><button onclick='link()'>Link</button><br >
+    <div style="float: left"><button onclick="bulk_delete()">Bulk Delete Bellow</button><br />
+    <textarea id='bulk_delete'></textarea></div>
+    <div ><button onclick="bulk_add()">Bulk Add Bellow</button><br />
+    <textarea id='bulk_add'></textarea></div>
+    
+    <hr>
+    Bulk Sentences operations<br />
+    Sentences:
+    <button onclick='show_sentences()'>Show</button><br>
+    <div id="sentences"></div><br>
+    
+    <!--<input id="keyword_a"><input id="keyword_b"><button onclick='link()'>Link</button><br >-->
+    <div style="float: left">
+    <button onclick="bulk_delete_sentences()">Bulk Delete Bellow</button><br />
+    <textarea id='bulk_delete_sentences'></textarea></div>
+    <div>
+    <button onclick="bulk_add_sentences()">Bulk Add Bellow</button><br />
+    <textarea id='bulk_add_sentences'></textarea></div>
+    <hr>
+    Bulk Similar keywords operations<br />
+    Similar keywords:
+    <button onclick='show_similar()'>Show</button><br>
+    <div id="similar"></div><br>
+    <div>
+    <button onclick="bulk_delete_similar()">Bulk Delete Bellow</button><br />
+    <textarea id='bulk_delete_similar'></textarea></div>
+    <div>        
+</body>
+    <script src="//code.jquery.com/jquery-1.11.3.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/plugins.js"></script>
+    <script src="//jquery.com/jquery-wp-content/themes/jquery/js/main.js"></script>
+    <script src="js/bootstrap-table.min.js"></script>
+    <script src="js/pouchdb-5.2.1.min.js"></script>
+    <script src="js/handlebars.js"></script>
+    <script src="js/typeahead.bundle.min.js"></script>
+    
+    
+    <script src="js/autosuggest.js"></script>
+    <script src="js/bulk.js"></script>
+    
+</html>
