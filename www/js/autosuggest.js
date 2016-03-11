@@ -1,4 +1,4 @@
-var couchurl = 'http://suggest.creativegeek.jp:8081/';
+var couchurl = 'http://aqueous-thicket-68007.herokuapp.com/';
 function Models(url) {
     /**
      * オートコンプリート用DB (Autocomplete DB - history)
