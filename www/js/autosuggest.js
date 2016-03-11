@@ -1,4 +1,4 @@
-var couchurl = 'http://aqueous-thicket-68007.herokuapp.com/';
+var couchurl = window.location.origin;
 function Models(url) {
     /**
      * オートコンプリート用DB (Autocomplete DB - history)
