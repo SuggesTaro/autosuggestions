@@ -11,6 +11,10 @@ bind_address = 0.0.0.0
 [admins]
 $COUCHDB_USER = $COUCHDB_PASS
 
+[cors]
+credentials = true
+origins = http://aqueous-thicket-68007.herokuapp.com, https://aqueous-thicket-68007.herokuapp.com
+
 EOM
 
 mkdir -p /app/.apt/var/run/couchdb/
