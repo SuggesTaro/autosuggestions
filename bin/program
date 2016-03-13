@@ -13,9 +13,13 @@ $COUCHDB_USER = $COUCHDB_PASS
 
 [cors]
 credentials = true
+# 今回のアプリのURLをこちらに追加されないと、URLのドメインでは使えません。
 origins = http://aqueous-thicket-68007.herokuapp.com, https://aqueous-thicket-68007.herokuapp.com
 
 [httpd_global_handlers]
+#　こちらのフォルダー（/app/www）内にオートサジェスト静的ファイルをすべて保存し、
+#　下記のURLでアクセスできるようにします。
+#　 http://aqueous-thicket-68007.herokuapp.com/_suggest
 _suggest = {couch_httpd_misc_handlers, handle_utils_dir_req, "/app/www/"}
 
 EOM

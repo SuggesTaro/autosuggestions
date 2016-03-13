@@ -1,4 +1,7 @@
+//リモートCoucDBのURLとして、利用する。
 var couchurl = window.location.origin;
+
+//MVCのModel
 function Models(url) {
     /**
      * オートコンプリート用DB (Autocomplete DB - history)
@@ -283,8 +286,9 @@ function Controller($elem, view) {
         if(e.keyCode === 40 && keySearchVal.val().trim().length === 0)
             _this.getHistory();
             
-        if (keySearchVal.val().trim().length > 0) {
+        if (keySearchVal.val().trim().length > 0 ) {
             _this.$elements.suggestionWrapper.removeClass('hidden');
+            _this._view.showSuggestionWrapper();
             _this.searchKeywords(true);
         } else {
             _this.$elements.suggestionWrapper.addClass('hidden');
