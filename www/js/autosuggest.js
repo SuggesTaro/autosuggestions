@@ -1,13 +1,58 @@
 //リモートCoucDBのURLとして、利用する。
 var couchurl = window.location.origin;
 
+// DBの初期化。SharedWorkerを利用しソケットを再利用させる。
+function initialize(){
+  
+    //worker
+    worker = new SharedWorker('/_suggest/js/workers/worker.js');
+    
+    /**
+     * SharedWorkerにメッセージを送る
+     * 
+     * message:
+     *          messageType - initialize (今のところ、initializeのみ)
+     *          couchurl    - window.location.origin　SharedWorkerからwindow.location.originを呼べないため
+     * 
+     * worker: 
+     *          SharedWorkerのオブジェクトSharedWorker
+     * 
+     * callback:
+     *          メッセージのレスポンス後、呼ばれるCallback関数
+     */
+    function messageWorker(message, worker, callback) {
+        
+        function listen(e){
+            if (e.data.funcName === message.funcName){
+                worker.port.removeEventListener("message". listen);
+                callback(e.data);
+            }
+        }
+        
+        worker.port.addEventListener("message", listen);
+        worker.port.postMessage(message);
+    }     
+    worker.port.start(); 
+    
+
+         
+    messageWorker(["initialize",couchurl], worker, function(data){
+        console.log(data);
+    });  
+
+
+}
 //MVCのModel
 function Models(url) {
+
     /**
      * オートコンプリート用DB (Autocomplete DB - history)
      * text:　ブラウザー文章履歴
      *
      */
+    // SharedWorkerを使い全て同期させる　（ソケットエラーを防ぐため）
+    initialize();
+
     this.histories = new PouchDB("history"); //ローカルブラウザ内のDB;
     
     // DBインスタンスの定義　Declaration of DB Instances
@@ -18,29 +63,29 @@ function Models(url) {
     *  _rev:
     *  keyword: 単語
     */
-    var keywords_remote =  new PouchDB(url+'/keywords');
-    
-    // ローカルキーワードDB
+
+    // ローカルキーワードDB　下記はMemoryを使った場合
+    // ただし、得にレスポンスが早くなった感じはありませんでした。
+    // 念のため残しておきます。
+    // this.keywords_local = new PouchDB("keywords");
+    // this.keywords = new PouchDB("keywords_mem",{adapter:'memory'});
+    // this.keywords.replicate.from(this.keywords_local,{live:true});
     this.keywords = new PouchDB("keywords");
-    
-    // リモートと常に同期させる
-    this.keywords.sync(keywords_remote, {live:true});
-    
-    
+
     /**
      * 文章DB (sentence DB)
      * _id:
      * _rev:
      * sentence:　文章
      */
-    var sentences_remote = new PouchDB(url+'/sentences');
-    
-    // ローカルキーワードDB
+
+    // ローカルキーワードDB 下記はMemoryを使った場合
+    // ただし、得にレスポンスが早くなった感じはありませんでした。
+    // 念のため残しておきます。
+    // this.sentences_local = new PouchDB("sentences");
+    // this.sentences = new PouchDB("sentences_mem",{adapter:'memory'});
+    // this.sentences.replicate.from(this.sentences_local);
     this.sentences = new PouchDB("sentences");
-    
-    // リモートと常に同期させる
-    this.sentences.sync(sentences_remote, {live:true});
-    
     
     /**
      * 類義文章DB (similar keywords DB)
@@ -49,14 +94,16 @@ function Models(url) {
      * keyword_id_a:　キーワードID
      * keyword_id_b:　キーワードID
      */ 
-    var similar_keywords_remote = new PouchDB(url+'/similar_keywords');
+
     
-    // ローカルキーワードDB    
+    // ローカルキーワードDB 下記はMemoryを使った場合
+    // ただし、得にレスポンスが早くなった感じはありませんでした。
+    // 念のため残しておきます。   
+    // this.similar_keywords_local = new PouchDB("similar_keywords");
+    // this.similar_keywords = new PouchDB("similar_keywords_mem",{adapter:"memory"});
+    // this.similar_keywords.replicate.from(this.similar_keywords_local);
     this.similar_keywords = new PouchDB("similar_keywords");
-    
-    // リモート常に同期させる
-    this.similar_keywords.sync(similar_keywords_remote, {live:true});
-    
+
 }
 
 Models.prototype = {
@@ -275,24 +322,33 @@ function Controller($elem, view) {
     
     var _this = this;
     
+    var timeout = null;
+    
     _this.$elements.btn.click(function(){
       _this.searchKeywords(true, true);
     });
     
     _this.$elements.input.keyup(function(e){
-        var keySearchVal = $("#search-keyword");
-        _this._view.removeTablesData();
-
-        if(e.keyCode === 40 && keySearchVal.val().trim().length === 0)
-            _this.getHistory();
-            
-        if (keySearchVal.val().trim().length > 0 ) {
-            _this.$elements.suggestionWrapper.removeClass('hidden');
-            _this._view.showSuggestionWrapper();
-            _this.searchKeywords(true);
-        } else {
-            _this.$elements.suggestionWrapper.addClass('hidden');
+        if(timeout != null){
+            clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、200ms以内にまた入力された場合は、前の入力をキャンセルする。
         }
+        timeout = setTimeout(function(){
+            var keySearchVal = $("#search-keyword");
+            _this._view.removeTablesData();
+    
+            if(e.keyCode === 40 && keySearchVal.val().trim().length === 0)
+                _this.getHistory();
+                
+            if (keySearchVal.val().trim().length > 0 ) {
+                _this.$elements.suggestionWrapper.removeClass('hidden');
+                _this._view.showSuggestionWrapper();
+                _this.searchKeywords(true);
+            } else {
+                _this.$elements.suggestionWrapper.addClass('hidden');
+            }            
+                
+        },200);
+
     });
 }
 
