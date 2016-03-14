@@ -1,6 +1,7 @@
 //リモートCoucDBのURLとして、利用する。
 var couchurl = window.location.origin;
 
+        
 // DBの初期化。SharedWorkerを利用しソケットを再利用させる。
 function initialize(cb){
   
@@ -37,8 +38,10 @@ function initialize(cb){
 
          
     messageWorker(["initialize",couchurl], worker, function(data){
-        console.log(data);
-        cb();
+        if(!data)
+            cb();
+            
+        console.log("Loaded  "+data);
     });  
 
 
@@ -106,6 +109,7 @@ function Models(url) {
     // this.similar_keywords.replicate.from(this.similar_keywords_local);
     this.similar_keywords = new PouchDB("similar_keywords");
 
+    this.initialized = false;
 }
 
 Models.prototype = {
@@ -137,7 +141,7 @@ Models.prototype = {
             }, param);
     },
     getSearchKeywords: function(keyValue) {
-        var param = {startkey: keyValue, endkey: keyValue+'\uffff', limit: 5, include_docs: true};
+        var param = {startkey: keyValue, endkey: keyValue+'\uffff',include_docs: true};
         return this.keywords.query(function (doc) {
             if (doc.keyword) {
                 emit(doc.keyword.toLowerCase());
@@ -145,6 +149,10 @@ Models.prototype = {
         }, param);
     },
     start: function(downloadingCb,proceedCb){
+        if(this.initialized){
+            proceedCb();
+            return;
+        }
         _this = this;
         _this.keywords.info().then(function(kw_result){
             _this.similar_keywords.info().then(function(sk_result){
@@ -154,9 +162,8 @@ Models.prototype = {
                         downloadingCb();
                         initialize(function(){
                            proceedCb();
+                           _this.initialized = true;
                         });
-                    }else{
-                        proceedCb();
                     }
                 });
             });
@@ -349,7 +356,12 @@ function Controller($elem, view, models) {
     });
     
     _this.$elements.input.keyup(function(e){
-         // $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
+        
+        // Enterを無視する
+        if(e.keyCode==13){
+            return;
+        }              
+
         var proceedSearch = function (){
             if(timeout != null){
                 clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、200ms以内にまた入力された場合は、前の入力をキャンセルする。
@@ -371,6 +383,7 @@ function Controller($elem, view, models) {
                     
             },200);            
         };
+        proceedSearch();
         models.start(
             function(){
                 $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
