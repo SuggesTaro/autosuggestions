@@ -144,14 +144,19 @@ Models.prototype = {
              }
         }, param);
     },
-    start: function(){
+    start: function(downloadingCb,proceedCb){
         _this = this;
         _this.keywords.info().then(function(kw_result){
             _this.similar_keywords.info().then(function(sk_result){
                 _this.sentences.info().then(function(s_result){
                     if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0){
-                        $("#suggesstion-table").text("Loading");
-                       // initialize();
+                        console.log(kw_result.doc_count+sk_result.doc_count+s_result.doc_count);
+                        downloadingCb();
+                        initialize(function(){
+                           proceedCb();
+                        });
+                    }else{
+                        proceedCb();
                     }
                 });
             });
@@ -331,7 +336,7 @@ View.prototype = {
 }
 
 
-function Controller($elem, view) {
+function Controller($elem, view, models) {
     this.$elements = $elem;
     this._view = view;
     
@@ -344,25 +349,37 @@ function Controller($elem, view) {
     });
     
     _this.$elements.input.keyup(function(e){
-        if(timeout != null){
-            clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、200ms以内にまた入力された場合は、前の入力をキャンセルする。
-        }
-        timeout = setTimeout(function(){
-            var keySearchVal = $("#search-keyword");
-            _this._view.removeTablesData();
-    
-            if(e.keyCode === 40 && keySearchVal.val().trim().length === 0)
-                _this.getHistory();
+         // $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
+        var proceedSearch = function (){
+            if(timeout != null){
+                clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、200ms以内にまた入力された場合は、前の入力をキャンセルする。
+            }
+            timeout = setTimeout(function(){
+                var keySearchVal = $("#search-keyword");
+                _this._view.removeTablesData();
+        
+                if(e.keyCode === 40 && keySearchVal.val().trim().length === 0)
+                    _this.getHistory();
+                    
+                if (keySearchVal.val().trim().length > 0 ) {
+                    _this.$elements.suggestionWrapper.removeClass('hidden');
+                    _this._view.showSuggestionWrapper();
+                    _this.searchKeywords(true);
+                } else {
+                    _this.$elements.suggestionWrapper.addClass('hidden');
+                }            
+                    
+            },200);            
+        };
+        models.start(
+            function(){
+                $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
                 
-            if (keySearchVal.val().trim().length > 0 ) {
-                _this.$elements.suggestionWrapper.removeClass('hidden');
-                _this._view.showSuggestionWrapper();
-                _this.searchKeywords(true);
-            } else {
-                _this.$elements.suggestionWrapper.addClass('hidden');
-            }            
-                
-        },200);
+            },
+            proceedSearch
+            
+        );
+        
 
     });
 }
@@ -388,9 +405,9 @@ $(function () {
         tables: {history: $('#history-table'), suggestion: $('#suggesstion-table')}
     };
     var models = new Models(couchurl);
-    models.start();
+    
     var view = new View($, elements, models);
-    var controller = new Controller(elements, view);
+    var controller = new Controller(elements, view, models);
     controller.init();
     $(window).resize(function(){view.resizeSuggestionWrapper();});
 });
