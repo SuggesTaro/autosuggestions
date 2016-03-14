@@ -38,7 +38,7 @@ function initialize(cb){
 
          
     messageWorker(["initialize",couchurl], worker, function(data){
-        if(!data)
+        if(data)
             cb();
             
         console.log("Loaded  "+data);
@@ -389,7 +389,11 @@ function Controller($elem, view, models) {
                 $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
                 
             },
-            proceedSearch
+            function(){
+                    _this.$elements.suggestionWrapper.removeClass('hidden');
+                    _this._view.showSuggestionWrapper();
+                    _this.searchKeywords(true);
+            }
             
         );
         
