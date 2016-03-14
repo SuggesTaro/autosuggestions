@@ -6,5 +6,6 @@ dbnames=( keywords sentences similar_keywords)
 rm -fr *json
 for i in "${dbnames[@]}"
 do
+        curl -X PUT http://aqueous-thicket-68007.herokuapp.com/$i
         bash couchdb-backup.sh -b -H aqueous-thicket-68007.herokuapp.com -P 80 -d $i -f $i".json"
 done
