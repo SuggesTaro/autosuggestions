@@ -2,7 +2,7 @@
 var couchurl = window.location.origin;
 
 // DBの初期化。SharedWorkerを利用しソケットを再利用させる。
-function initialize(){
+function initialize(cb){
   
     //worker
     worker = new SharedWorker('/_suggest/js/workers/worker.js');
@@ -38,10 +38,12 @@ function initialize(){
          
     messageWorker(["initialize",couchurl], worker, function(data){
         console.log(data);
+        cb();
     });  
 
 
 }
+
 //MVCのModel
 function Models(url) {
 
@@ -51,7 +53,7 @@ function Models(url) {
      *
      */
     // SharedWorkerを使い全て同期させる　（ソケットエラーを防ぐため）
-    initialize();
+   // initialize();
 
     this.histories = new PouchDB("history"); //ローカルブラウザ内のDB;
     
@@ -141,6 +143,19 @@ Models.prototype = {
                 emit(doc.keyword.toLowerCase());
              }
         }, param);
+    },
+    start: function(){
+        _this = this;
+        _this.keywords.info().then(function(kw_result){
+            _this.similar_keywords.info().then(function(sk_result){
+                _this.sentences.info().then(function(s_result){
+                    if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0){
+                        $("#suggesstion-table").text("Loading");
+                       // initialize();
+                    }
+                });
+            });
+        });
     }
 }
 
@@ -372,7 +387,9 @@ $(function () {
         suggestionWrapper: $('#suggestion-box'),
         tables: {history: $('#history-table'), suggestion: $('#suggesstion-table')}
     };
-    var view = new View($, elements, new Models(couchurl));
+    var models = new Models(couchurl);
+    models.start();
+    var view = new View($, elements, models);
     var controller = new Controller(elements, view);
     controller.init();
     $(window).resize(function(){view.resizeSuggestionWrapper();});
