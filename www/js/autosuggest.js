@@ -148,26 +148,35 @@ Models.prototype = {
              }
         }, param);
     },
-    start: function(downloadingCb,proceedCb){
-        if(this.initialized){
-            proceedCb();
-            return;
-        }
+    ifEmptyData: function(callback){
         _this = this;
         _this.keywords.info().then(function(kw_result){
             _this.similar_keywords.info().then(function(sk_result){
                 _this.sentences.info().then(function(s_result){
                     if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0){
-                        console.log(kw_result.doc_count+sk_result.doc_count+s_result.doc_count);
-                        downloadingCb();
-                        initialize(function(){
-                           proceedCb();
-                           _this.initialized = true;
-                        });
+                        callback();
                     }
                 });
             });
         });
+    },
+    start: function(downloadingCb,proceedCb){
+        if(this.initialized){
+            console.log("Initialized");
+            proceedCb();
+            return;
+        }
+        this.ifEmptyData(function(){
+
+            console.log("Empty data");
+            downloadingCb();
+            initialize(function(){
+               proceedCb();
+               _this.initialized = true;
+            });
+                 
+        });
+
     }
 }
 
@@ -381,7 +390,7 @@ function Controller($elem, view, models) {
                     _this.$elements.suggestionWrapper.addClass('hidden');
                 }            
                     
-            },200);            
+            },500);            
         };
         proceedSearch();
         models.start(
@@ -390,9 +399,8 @@ function Controller($elem, view, models) {
                 
             },
             function(){
-                    _this.$elements.suggestionWrapper.removeClass('hidden');
-                    _this._view.showSuggestionWrapper();
-                    _this.searchKeywords(true);
+                $("#suggesstion-table .no-records-found td").text("...");
+                proceedSearch();
             }
             
         );
