@@ -33,5 +33,5 @@ couchdb &
 
 sleep 10
 
-cd dump
-sh import.sh
+cd /app/dump
+bash import.sh
