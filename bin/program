@@ -22,6 +22,10 @@ origins = http://aqueous-thicket-68007.herokuapp.com, https://aqueous-thicket-68
 #　 http://aqueous-thicket-68007.herokuapp.com/_suggest
 _suggest = {couch_httpd_misc_handlers, handle_utils_dir_req, "/app/www/"}
 
+[couchdb]
+database_dir = /app/couchdb/databases
+view_index_dir = /app/couchdb/views
+
 EOM
 
 mkdir -p /app/.apt/var/run/couchdb/
@@ -29,9 +33,4 @@ find . -type f -name "*" -exec sed -i'' -e "s#/usr/#/app/.apt/usr/#g" {} +
 find . -type f -name "*" -exec sed -i'' -e "s#/etc/#/app/.apt/etc/#g" {} +
 find . -type f -name "*" -exec sed -i'' -e "s#/var/#/app/.apt/var/#g" {} +
 
-couchdb &
-
-sleep 10
-
-cd /app/dump
-bash import.sh
+couchdb
