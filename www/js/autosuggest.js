@@ -373,7 +373,7 @@ function Controller($elem, view, models) {
 
         var proceedSearch = function (){
             if(timeout != null){
-                clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、200ms以内にまた入力された場合は、前の入力をキャンセルする。
+                clearTimeout(timeout); //　素早く入力したときに、最初に打った文字だけが認識されることがある。対策は２００msのインターバルと、500ms以内にまた入力された場合は、前の入力をキャンセルする。
             }
             timeout = setTimeout(function(){
                 var keySearchVal = $("#search-keyword");
@@ -399,6 +399,7 @@ function Controller($elem, view, models) {
                 
             },
             function(){
+                
                 $("#suggesstion-table .no-records-found td").text("...");
                 proceedSearch();
             }

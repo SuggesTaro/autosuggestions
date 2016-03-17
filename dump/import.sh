@@ -7,8 +7,8 @@ dbnames=( keywords sentences similar_keywords )
 for i in "${dbnames[@]}"
 do
     echo "Importing "$i
-    #curl -X PUT http://aqueous-thicket-68007.herokuapp.com/$i
-    #bash couchdb-backup.sh -r -H aqueous-thicket-68007.herokuapp.com -P 80 -d $i -f $i".json"
-    curl -X PUT http://suggest.creativegeek.ph/$i
-    bash couchdb-backup.sh -r -H suggest.creativegeek.ph -P 80 -d $i -f $i".json"    
+    curl -X PUT http://aqueous-thicket-68007.herokuapp.com/$i
+    bash couchdb-backup.sh -r -H aqueous-thicket-68007.herokuapp.com -P 80 -d $i -f $i".json"
+    # curl -X PUT http://suggest.creativegeek.ph/$i
+    # bash couchdb-backup.sh -r -H suggest.creativegeek.ph -P 80 -d $i -f $i".json"    
 done
