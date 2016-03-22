@@ -59,7 +59,14 @@ function Models(url) {
    // initialize();
 
     this.histories = new PouchDB("history"); //ローカルブラウザ内のDB;
+    var remote_history = new PouchDB(couchurl+"/history");
     
+    //ヒストリーだけ、サーバーと同期させる。
+    //また、何らかの理由でワーカーとして同期できないため、こちらで同期させる
+    this.histories.sync(remote_history,{
+        live: true,
+        retry: true
+    });
     // DBインスタンスの定義　Declaration of DB Instances
     
     /** 
