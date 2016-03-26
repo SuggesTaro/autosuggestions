@@ -12,9 +12,6 @@ var remote_sentences = null;
 var similar_keywords = null;
 var remote_similar_keywords = null;
 
-var history = null;
-var remote_history = null;
-
 // CouchDBがインストールされているURL
 var couchurl = null;
 
@@ -22,7 +19,6 @@ var couchurl = null;
 var keywords_completed = false;
 var similar_keywords_completed = false;
 var sentences_completed = false;
-var history_completed = false;
 
 // Errorがあるかどうか
 var hasError = false;
@@ -30,7 +26,7 @@ var hasError = false;
 // DBのダウロードが完了されたかどうか確認するため関数
 // 一旦 complete になると、ずっと true を返すしくみ
 function isDataloaded(){
-	var completed = similar_keywords_completed && keywords_completed && sentences_completed && history_completed;
+	var completed = similar_keywords_completed && keywords_completed && sentences_completed;
 	return completed;
 	
 }
@@ -108,28 +104,6 @@ self.addEventListener("connect", function(e) {
 
 	   		}
 
-	   		if(history == null){
-	   			remote_history = new PouchDB(couchurl+"/history");
-	   			
-	   			history = new PouchDB("history");
-	   			port.postMessage(isDataloaded());
-	
-				history.sync(remote_history,{
-					live: true, retry: true
-				}).on('paused', function (err) {
-				  history_completed = true;
-				  hasError = false;
-				  port.postMessage(isDataloaded());
-				}).on('complete', function (info) {
-				  history_completed = true;
-				  hasError = false;
-				  port.postMessage(isDataloaded());
-				}).on('error', function (err) {
-	
-				  hasError = true;
-				});
-
-	   		}
 	   			   		
 	   	}
 

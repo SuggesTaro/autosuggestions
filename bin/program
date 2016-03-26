@@ -21,7 +21,7 @@ origins = http://aqueous-thicket-68007.herokuapp.com, https://aqueous-thicket-68
 #　下記のURLでアクセスできるようにします。
 #　 http://aqueous-thicket-68007.herokuapp.com/_suggest
 _suggest = {couch_httpd_misc_handlers, handle_utils_dir_req, "/app/www/"}
-
+_db = {couch_httpd_misc_handlers, handle_utils_dir_req, "/app/couchdb/databases/"}
 [couchdb]
 database_dir = /app/couchdb/databases
 view_index_dir = /app/couchdb/views
