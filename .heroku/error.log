@@ -1,0 +1,24 @@
+2016/04/09 17:02:34 truncating error log...
+2016/04/09 17:02:34 cleaning up tmp dirs...
+2016/04/09 17:02:34 heroku-cli: Installing core plugins...
+2016/04/09 17:02:34 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:02:49  done
+2016/04/09 17:02:49 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:02:53 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:02:53 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:02:53 Email: 
+2016/04/09 17:02:53 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:03:09  ▸    Authentication failed.
+ ▸    Email or password is not valid.
+ ▸    Check your credentials on https://dashboard.heroku.com
+2016/04/09 17:03:48 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:03:48 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:03:48 Email: 
+2016/04/09 17:03:48 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:04:06  ▸    Authentication failed.
+ ▸    Email or password is not valid.
+ ▸    Check your credentials on https://dashboard.heroku.com
+2016/04/09 17:04:56 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:04:56 open /root/.heroku/config.json: no such file or directory
+2016/04/09 17:04:56 Email: 
+2016/04/09 17:04:56 open /root/.heroku/config.json: no such file or directory
