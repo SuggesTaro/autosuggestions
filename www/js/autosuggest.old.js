@@ -67,8 +67,6 @@ function Models(url) {
         live: true,
         retry: true
     });
-    
-    
     // DBインスタンスの定義　Declaration of DB Instances
     
     /** 
@@ -117,100 +115,11 @@ function Models(url) {
     // this.similar_keywords = new PouchDB("similar_keywords_mem",{adapter:"memory"});
     // this.similar_keywords.replicate.from(this.similar_keywords_local);
     this.similar_keywords = new PouchDB("similar_keywords");
-    
-    
-    var _this = this;
-    _this.temp_keyword = [];
-    _this.temp_sentences = [];
-    
-    _this.keywords.allDocs({include_docs:true}).then(function(keywords){
-        $.each(keywords.rows, function (i, val){
-            var keyword = val.doc;
-            _this.temp_keyword.push({id:keyword._id,keyword:keyword.keyword, sentences:[], similar_sentences: []}); 
-        });
-        
-        _this.sentences.allDocs({include_docs:true}).then(function(sentences){
-            $.each(sentences.rows, function (i, val){
-                var sentence = val.doc;
-                $.each(_this.temp_keyword, function(i,val){
-                    if (val.id === sentence.keyword_id){    
-                        var tmpSentence = {id:sentence._id, sentence:sentence.sentence, keyword_id:sentence.keyword_id};
-                        _this.temp_sentences.push(tmpSentence);
-                        _this.temp_keyword[i].sentences.push(tmpSentence); 
-                    }
-                });
-            });
-            
-            _this.similar_keywords.allDocs({include_docs:true}).then(function(similar_keyword){
-                $.each(similar_keyword.rows, function (i, val){
-                    var keyword = val.doc;
-                    
-                    $.each(_this.temp_keyword, function(i,val){
-                        // console.log(val, 'the temp_keyword sentence');
-                        $.each(val.sentences, function(k, sentence){
-                            // console.log(sentence, 'the sentence info');
-                            if(keyword.keyword_id_a === sentence.keyword_id){
-                                var s = _this.searchSimilarKeywordForSentences(keyword.keyword_id_a, _this.temp_keyword[i]);
-                                _this.temp_keyword[i] = s;
-                                // console.log(s, 'the s');
-                                // _this.temp_keyword[i].similar_sentences
-                                // .push(s);
-                            } else if(keyword.keyword_id_b === sentence.keyword_id){
-                                var s = _this.searchSimilarKeywordForSentences(keyword.keyword_id_b, _this.temp_keyword[i]);
-                                _this.temp_keyword[i] = s;
-                                // console.log(s, 'the s');
-                                // _this.temp_keyword[i].similar_sentences.push(s);
-                            }
-                        });
-                    });
-                });
-                
-                console.log(_this.temp_keyword, 'summary');
-            });
-        });
-    });
-    
-    
-    
-    
 
     this.initialized = false;
 }
 
 Models.prototype = {
-    searchSimilarKeywordForSentences : function(s_keyword_id, arr) {
-        var _this = this;
-        $.each(this.temp_sentences, function(index, tempSentence) {
-            var sentenceExist = false;
-            
-            if (tempSentence.keyword_id === s_keyword_id) { // check if the keyword id 
-                
-                $.each(arr.sentences, function(index, value) {
-                    if (value.sentence === tempSentence.sentence) {
-                        console.log('check on sentences -> ', value.sentence, '===', tempSentence.sentence, ' = ', value.sentences === tempSentence.sentence);
-                        sentenceExist = true;
-                    }
-                });
-                
-                console.log('if sentenceExist is = ', sentenceExist);
-                if (!sentenceExist) {
-                    $.each(arr.similar_sentences, function(index, value) {
-                        console.log('check on similar_sentences -> ', value, '===', tempSentence.sentence, ' = ', tempSentence.sentence === value);
-                        if (tempSentence.sentence === value){
-                            sentenceExist = true;
-                            // console.log(sentenceExist, 'check on similar_sentences');
-                        }
-                    });    
-                }
-                
-                console.log(tempSentence.sentence, ' is exist ', sentenceExist, 'final result');
-                if(!sentenceExist){
-                    arr.similar_sentences.push(tempSentence.sentence);
-                }
-            }
-        });
-        return arr;
-    },
     showHistory: function() {
         return this.histories.allDocs({include_docs:true, limit: 10});
     },
@@ -282,33 +191,21 @@ function View($jquery, $elem, models) {
     this.$ = $jquery;
     this.$elements = $elem;
     this._models = models;
-    this.$elements.remove = {
-      histories : function() {
-          return $("#history-list li").remove();
-      },
-      suggestions : function() {
-          return $("#suggestion-list li").remove();
-      }
-    };
     
     var _this = this;
+    
+    _this.$elements.tables.history.on('click-row.bs.table', function (e, row, $element) {
+        _this.$elements.input.val(row.text);
+        _this.$elements.suggestionWrapper.addClass('hidden');
+    });
+    
+    _this.$elements.tables.suggestion.on('click-row.bs.table', function (e, row, $element) {
+        _this.$elements.input.val(row.text);
+        _this.$elements.suggestionWrapper.addClass('hidden');
+    });
 }
 
 View.prototype = {
-    listOnClick : function() {
-        var _this = this;
-        $('#suggestions>#history-list>li').on('click',function(event){
-            _this.$elements.input.val($(this).text());
-            _this.$elements.suggestionWrapper.addClass('hidden');
-            event.stopPropagation();
-        });
-        
-        $('#suggestions>#suggestion-list>li').on('click',function(event){
-            _this.$elements.input.val($(this).text());
-            _this.$elements.suggestionWrapper.addClass('hidden');
-            event.stopPropagation();
-        });
-    },
     resizeSuggestionWrapper: function() {
         var _this = this;
         _this.$("#suggestion-box").css('width', _this.$elements.input.width() + $("#keyword-div .input-group-btn").width());  
@@ -317,53 +214,49 @@ View.prototype = {
         $(".th-inner").addClass('hidden');
     },
     removeTablesData: function() {
-        this.$elements.remove.histories();
-        this.$elements.remove.suggestions();
+        this.$elements.tables.history.bootstrapTable('removeAll');
+        this.$elements.tables.suggestion.bootstrapTable('removeAll');
     },
     hideSuggestionWrapper: function() {
         this.$elements.suggestionWrapper.addClass('hidden');
         this.resizeSuggestionWrapper();
     },
     showSuggestionWrapper: function() {
-        this.removeTablesData();
         this.$elements.suggestionWrapper.removeClass('hidden');
         this.resizeSuggestionWrapper();
     },
     appendTableData: function(results, isHistory, isSuggestion) {
         var _this = this;
         if (isHistory) {
-            _this.$elements.remove.histories();
-            if (results.length > 0) { // if query has data
-                _this.$.each(results, function(index, value) {
-                    var doc = value.doc;
-                    var list = "<li id='" + doc._id + "' class='sg-li'>" + doc.text + "</li>";
-                    _this.$elements.tables.histories.append(list);
+            _this.$elements.tables.history.bootstrapTable('removeAll');
+            _this.$.each(results, function(index, value) {
+                var doc = value.doc;
+                _this.$elements.tables.history.bootstrapTable('insertRow', {
+                    index: doc._id,
+                    row: {
+                        id: doc._id,
+                        text: doc.text
+                    }
                 });
-            } else {
-                _this.$elements.tables.histories.append('<li class="no-records-found">...</li>');
-            }
+            });
         } else if (isSuggestion) {
             var ids = _this.$.map(results, function (doc) {
                 return doc.id;
             });
+            console.log(ids, 'ids of the keywords to be search on similar_keywords db');
             _this.getSentences(ids).then(function(sentences){
-                _this.$elements.remove.suggestions();
-                if (sentences.rows.length > 0) { // if query has data
-                    // console.log(sentences.rows, 'the result');
-                    _this.$.each(sentences.rows, function(index, value) {
-                        var doc = value.doc;
-                        var list = "<li id='" + doc._id + "' class='sg-li'>" + doc.sentence + "</li>";
-                        _this.$elements.tables.suggestions.append(list);
-                        _this.getSimilarKeywords(ids);
+                _this.$elements.tables.suggestion.bootstrapTable('removeAll');
+                _this.$.each(sentences.rows, function(index, value) {
+                    var doc = value.doc;
+                    _this.$elements.tables.suggestion.bootstrapTable('insertRow', {
+                        index: doc._id,
+                        row: {
+                            id: doc._id,
+                            text: doc.sentence
+                        }
                     });
-                } else {
-                    // show no records found
-                    _this.$elements.tables.suggestions.append('<li class="no-records-found">...</li>');
-                    
-                    _this.$elements.suggestionWrapper.removeClass('hidden');
-                    _this.resizeSuggestionWrapper();
-                    _this.listOnClick();
-                }
+                    _this.getSimilarKeywords(ids);
+                });
             }).catch(function (err) {
                 console.error('文章のクエリー時にエラーが発生しました', err);
             });
@@ -390,13 +283,14 @@ View.prototype = {
             });
             
             _this.getSentences(similarKeywordResultId).then(function(sentences2){
+                var suggesstionTableData = _this.$elements.tables.suggestion.bootstrapTable('getData');
                 var hasSeparator = false;
                 $.each(sentences2.rows, function(index, value) {
                     var doc = value.doc;
                     var hasDuplicate = false; //　入力が早すぎると、同じ文章がサジェスト欄に挿入されていたりすることがあるため、これで防ぐ
                     
-                    $('#suggestion-list li').each(function(i,_thisElem){
-                       if (doc._id === $(_thisElem).attr('id')){
+                    $.each(suggesstionTableData, function(i, row){
+                        if (doc._id === row.id){
                             hasDuplicate = true;
                             return;
                         }
@@ -404,19 +298,23 @@ View.prototype = {
                     if (!hasDuplicate) {
                         if(!hasSeparator) {
                             hasSeparator = true;
-                            var hrList = "<li id='" + doc._id + "' class='sg-li'><hr style='margin: 0;cursor: pointer;'></li>";
-                            _this.$elements.tables.suggestions.append(hrList);
+                            _this.$elements.tables.suggestion.bootstrapTable('insertRow', {
+                                index: suggesstionTableData.length,
+                                row: {
+                                    id: doc._id,
+                                    text: '<hr style="margin: 0;cursor: pointer;">'
+                                }
+                            });
                         }
-                        
-                        var list = "<li id='" + doc._id + "' class='sg-li'>" + doc.sentence + "</li>";
-                        _this.$elements.tables.suggestions.append(list);
+                        _this.$elements.tables.suggestion.bootstrapTable('insertRow', {
+                            index: suggesstionTableData.length,
+                            row: {
+                                id: doc._id,
+                                text: doc.sentence
+                            }
+                        });
                     }
                 });
-                
-                _this.$elements.suggestionWrapper.removeClass('hidden');
-                _this.resizeSuggestionWrapper();
-                _this.listOnClick();
-        
             }).catch(function (err) {
                 console.error('エラー', err);
             }); // end for senteces 2
@@ -429,39 +327,36 @@ View.prototype = {
     showHistory: function() {
         var _this = this;
         this._models.showHistory().then(function(result){
-            // console.log(result , 'showHistory()');
-            // _this.showSuggestionWrapper();
             _this.appendTableData(result.rows, true,false);
+            _this.showSuggestionWrapper(); 
         });
     },
     showSearchKeywords: function(filterHistory, isNeedToSaveHistory) {
-        $('#suggestion-list').append('<li><center>...</center></li>');
-        $('#history-list').append('<li><center>...</center></li>');
         var _this = this;
         var key = _this.$elements.input.val().toLowerCase();
-        
-        if (key.trim() === ''){
-            _this.$elements.remove.suggestions();
-        } else {
-            _this._models.getSearchKeywords(key).then(function(result){
-                // console.log(result.rows , 'query Keywords()');
+        _this._models.getSearchKeywords(key).then(function(result){
+            if (key.trim() === ''){
+                _this.$elements.tables.suggestion.bootstrapTable('removeAll');
+            } else {
+                console.log(result.rows);
                 _this.appendTableData(result.rows, false, true);
-            }).catch(function (err) {
-                console.error('エラー発生', err);
-            });
-            
-            if (filterHistory) {
-                _this._models.queryHistory(key).then(function(result){
-                    if (isNeedToSaveHistory && result.rows.length === 0) 
-                        _this._models.saveHistory(key);
-                    // console.log(result.rows, ' query History');
-                    _this.appendTableData(result.rows, true, false);
-                }).catch(function (err) {
-                    console.error('オートコンプリートでエラーが発生しました。', err);
-                });
             }
+        }).catch(function (err) {
+            console.error('エラー発生', err);
+        });
+        
+        if (filterHistory) {
+            _this._models.queryHistory(key).then(function(result){
+                if (isNeedToSaveHistory && result.rows.length === 0) 
+                    _this._models.saveHistory(key);
+                _this.appendTableData(result.rows, true, false);
+            }).catch(function (err) {
+                console.error('オートコンプリートでエラーが発生しました。', err);
+            });
         }
     },
+    
+    
 }
 
 
@@ -496,8 +391,8 @@ function Controller($elem, view, models) {
                     _this.getHistory();
                     
                 if (keySearchVal.val().trim().length > 0 ) {
-                    // _this.$elements.suggestionWrapper.removeClass('hidden');
-                    // _this._view.showSuggestionWrapper();
+                    _this.$elements.suggestionWrapper.removeClass('hidden');
+                    _this._view.showSuggestionWrapper();
                     _this.searchKeywords(true);
                 } else {
                     _this.$elements.suggestionWrapper.addClass('hidden');
@@ -507,13 +402,13 @@ function Controller($elem, view, models) {
         };
         proceedSearch();
         models.start(
-            function(){ 
-                $('#suggestion-list li').remove();
-                $('#suggestion-list').append('<li class="no-records-found sg-li" >DBをダウンロード中 ... </li>');
+            function(){
+                $("#suggesstion-table .no-records-found td").text("DBをダウンロード中 ... ");
+                
             },
             function(){
-                $('#suggestion-list li').remove();
-                $('#suggestion-list').append('<li class="no-records-found sg-li">...</li>');
+                
+                $("#suggesstion-table .no-records-found td").text("...");
                 proceedSearch();
             }
             
@@ -541,7 +436,7 @@ $(function () {
         input : $('#search-keyword'),
         btn : $("#btn-search"),
         suggestionWrapper: $('#suggestion-box'),
-        tables: {histories: $('#history-list'), suggestions: $('#suggestion-list')}
+        tables: {history: $('#history-table'), suggestion: $('#suggesstion-table')}
     };
     var models = new Models(couchurl);
     
@@ -549,5 +444,4 @@ $(function () {
     var controller = new Controller(elements, view, models);
     controller.init();
     $(window).resize(function(){view.resizeSuggestionWrapper();});
-    
 });

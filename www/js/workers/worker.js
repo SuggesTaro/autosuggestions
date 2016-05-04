@@ -34,7 +34,7 @@ self.addEventListener("connect", function(e) {
    var port = e.ports[0];  
    
 
-   port.addEventListener("message", function(e) {  
+   port.addEventListener("message", function(e) { 
 
 	   	if(e.data[0] == 'initialize' ){
 	   		
