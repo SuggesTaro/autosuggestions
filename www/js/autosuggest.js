@@ -164,7 +164,7 @@ Models.prototype = {
                             }
                         });
                     });
-                    console.log(_this.temp_keywords, 'summary');
+                    // console.log(_this.temp_keywords, 'summary');
                     
                     if (proceedCb)
                         proceedCb();
