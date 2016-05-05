@@ -4,8 +4,6 @@ var couchurl = window.location.origin;
         
 // DBの初期化。SharedWorkerを利用しソケットを再利用させる。
 function initialize(cb){
-    console.log('initialization');
-    
     //worker
     var worker = new SharedWorker('/_suggest/js/workers/worker.js');
     
@@ -26,7 +24,6 @@ function initialize(cb){
         
         function listen(e){
             if (e.data.funcName === message.funcName){
-                // sWorker.port.removeEventListener("message" , listen);
                 callback(e.data);
             }
         }
@@ -56,9 +53,7 @@ function Models(url) {
      * text:　ブラウザー文章履歴
      *
      */
-    // SharedWorkerを使い全て同期させる　（ソケットエラーを防ぐため）
-    // initialize();
-
+    
     this.histories = new PouchDB("history"); //ローカルブラウザ内のDB;
     var remote_history = new PouchDB(couchurl+"/history");
     
@@ -79,12 +74,6 @@ function Models(url) {
     *  keyword: 単語
     */
 
-    // ローカルキーワードDB　下記はMemoryを使った場合
-    // ただし、得にレスポンスが早くなった感じはありませんでした。
-    // 念のため残しておきます。
-    // this.keywords_local = new PouchDB("keywords");
-    // this.keywords = new PouchDB("keywords_mem",{adapter:'memory'});
-    // this.keywords.replicate.from(this.keywords_local,{live:true});
     this.keywords = new PouchDB("keywords");
 
     /**
@@ -94,12 +83,7 @@ function Models(url) {
      * sentence:　文章
      */
 
-    // ローカルキーワードDB 下記はMemoryを使った場合
-    // ただし、得にレスポンスが早くなった感じはありませんでした。
-    // 念のため残しておきます。
-    // this.sentences_local = new PouchDB("sentences");
-    // this.sentences = new PouchDB("sentences_mem",{adapter:'memory'});
-    // this.sentences.replicate.from(this.sentences_local);
+
     this.sentences = new PouchDB("sentences");
     
     /**
@@ -111,12 +95,6 @@ function Models(url) {
      */ 
 
     
-    // ローカルキーワードDB 下記はMemoryを使った場合
-    // ただし、得にレスポンスが早くなった感じはありませんでした。
-    // 念のため残しておきます。   
-    // this.similar_keywords_local = new PouchDB("similar_keywords");
-    // this.similar_keywords = new PouchDB("similar_keywords_mem",{adapter:"memory"});
-    // this.similar_keywords.replicate.from(this.similar_keywords_local);
     this.similar_keywords = new PouchDB("similar_keywords");
     
     
@@ -124,8 +102,11 @@ function Models(url) {
 }
 
 Models.prototype = {
+    //Persistentクエリーを初期設定する
     initializePersistentQueries: function(proceedCb) { 
-        // this function create a persistent query to make a faster query on the pouch
+        // Persistentクエリーを利用し、PouchDBのクエリーを高速化ができます。
+        // 10から100倍高速化するとのこと
+        // https://pouchdb.com/2014/05/01/secondary-indexes-have-landed-in-pouchdb.html
         
         var _this = this;
         
@@ -143,9 +124,12 @@ Models.prototype = {
         
         _this.histories.put(HistoryDoc).then(function () {
             return _this.histories.query('histories/by_history', {stale: 'update_after'});
+        }).catch(function (err) {
+            // some error (maybe a 409, because it already exists?)
+            console.error('History views maybe a 409, because it already exists?', err);
         });
     
-        // FOR KEYWORDS
+        // キーワードのクエリー初期化
         var keywordDoc = {
           _id: '_design/keywords',
           views: {
@@ -161,7 +145,7 @@ Models.prototype = {
         
         
         
-        // FOR SENTENCES
+        // sentences のクエリー初期化
         var SentenceDoc = {
           _id: '_design/sentences',
           views: {
@@ -174,7 +158,7 @@ Models.prototype = {
         };
         
         
-        // SIMILAR KEYWORD
+        // 類義のクエリー初期化
         var SimilarKeywordDoc = {
           _id: '_design/similarKeywords',
           views: {
@@ -203,17 +187,17 @@ Models.prototype = {
                             });
                         }).catch(function (err) {
                           // some error (maybe a 409, because it already exists?)
-                          console.log('Sentences views maybe a 409, because it already exists?', err);
+                          console.error('Sentences views maybe a 409, because it already exists?', err);
                         });
                     }); // end of sentence firs query
                 }).catch(function (err) {
                   // some error (maybe a 409, because it already exists?)
-                  console.log('Sentences views maybe a 409, because it already exists?', err);
+                  console.error('Sentences views maybe a 409, because it already exists?', err);
                 });
             });
         }).catch(function (err) {
             // some error (maybe a 409, because it already exists?)
-            console.log('Keywords views maybe a 409, because it already exists?', err);
+            console.error('Keywords views maybe a 409, because it already exists?', err);
         });
     },
     showHistory: function() {
@@ -243,6 +227,7 @@ Models.prototype = {
         _this.keywords.info().then(function(kw_result){
             _this.similar_keywords.info().then(function(sk_result){
                 _this.sentences.info().then(function(s_result){
+                    console.log(kw_result.doc_count, ' + ', sk_result.doc_count, ' + ', s_result.doc_count, ' = ', kw_result.doc_count+sk_result.doc_count+s_result.doc_count);
                     if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0){
                         callback();
                     }
@@ -306,6 +291,8 @@ View.prototype = {
     },
     init: function () {
         // create some initialization process here
+        if(this._models.initialized)
+            this._models.initializePersistentQueries();
     },
     removeTablesData: function() {
         this.$elements.remove.histories();
@@ -428,16 +415,16 @@ View.prototype = {
         var _this = this;
         var key = _this.$elements.input.val().toLowerCase();
         
-        if ($.trim(key) === ''){
-            _this.$elements.remove.suggestions();
-        } else {
+        // if ($.trim(key) === '') {
+            // _this.$elements.remove.suggestions();
+        // } else {
             _this.$elements.remove.suggestions();
             _this._models.getSearchKeywords(key).then(function(result){
                 _this.appendTableData(result.rows, false, true);
             }).catch(function (err) {
                 console.error('エラー発生', err);
             });
-        }
+        // }
         
         if (filterHistory) {
             _this._models.queryHistory(key).then(function(result){
@@ -490,6 +477,9 @@ function Controller($elem, view, models) {
         
         // if model not iniatialized
         if (!models.initialized) {
+            _this.$elements.suggestionWrapper.removeClass('hidden');
+            _this._view.resizeSuggestionWrapper();
+            
             models.start(
                 function(){ 
                     // tell the user that db is downloading
