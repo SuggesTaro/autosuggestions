@@ -4,8 +4,7 @@ var couchurl = window.location.origin;
         
 // DBの初期化。SharedWorkerを利用しソケットを再利用させる。
 function initialize(cb){
-    console.log('initialization');
-    
+  
     //worker
     var worker = new SharedWorker('/_suggest/js/workers/worker.js');
     
@@ -120,89 +119,136 @@ function Models(url) {
     this.similar_keywords = new PouchDB("similar_keywords");
     
     
+    // temporary variables
+    this.temp_keywords = [];
+    this.temp_sentences = [];
+    
     this.initialized = false;
 }
 
 Models.prototype = {
-    initializePersistentQueries: function(callback) {
-        console.log(' queryre qeqweqwewq');
+    compileDb : function (proceedCb) {
         var _this = this;
-    
-        // FOR KEYWORDS
-        var keywordDoc = {
-          _id: '_design/keywords',
-          views: {
-            by_keyword: {
-              map: function (doc) { 
-                  if (doc.keyword) {
-                    emit(doc.keyword.toLowerCase());
-                 }
-              }.toString()
-            }
-          }
-        };
+        _this.temp_keywords = [];
+        _this.temp_sentences = [];
         
-        this.keywords.put(keywordDoc).then(function () {
-            return _this.keywords.query('keywords/by_keyword', {stale: 'update_after'});
-        }).catch(function (err) {
-            // some error (maybe a 409, because it already exists?)
-            console.log('Keywords views maybe a 409, because it already exists?', err);
+        _this.keywords.allDocs({include_docs:true}).then(function(keywords){
+            $.each(keywords.rows, function (i, val){
+                var keyword = val.doc;
+                _this.temp_keywords.push({id:keyword._id,keyword:keyword.keyword, sentences:[], similar_sentences: []}); 
+            });
+            
+            _this.sentences.allDocs({include_docs:true}).then(function(sentences){
+                $.each(sentences.rows, function (i, val){
+                    var sentence = val.doc;
+                    $.each(_this.temp_keywords, function(i,val){
+                        if (val.id === sentence.keyword_id){    
+                            var tmpSentence = {id:sentence._id, sentence:sentence.sentence, keyword_id:sentence.keyword_id};
+                            _this.temp_sentences.push(tmpSentence);
+                            _this.temp_keywords[i].sentences.push(tmpSentence); 
+                        }
+                    });
+                    
+                });
+                
+                _this.similar_keywords.allDocs({include_docs:true}).then(function(similar_keyword){
+                    $.each(similar_keyword.rows, function (i, val){
+                        var keyword = val.doc;
+                        $.each(_this.temp_keywords, function(i,tempKeyword){
+                            if (keyword.keyword_id_a === tempKeyword.id) {
+                                var s = _this.searchSimilarKeywordForSentences(keyword.keyword_id_b, _this.temp_keywords[i]);
+                                _this.temp_keywords[i] = s;
+                            } else if(keyword.keyword_id_b === tempKeyword.id){
+                                var s = _this.searchSimilarKeywordForSentences(keyword.keyword_id_a, _this.temp_keywords[i]);
+                                _this.temp_keywords[i] = s; 
+                            }
+                        });
+                    });
+                    // console.log(_this.temp_keywords, 'summary');
+                    
+                    if (proceedCb)
+                        proceedCb();
+                        
+                    return;
+                });
+            });
+        });
+    },
+    searchSimilarKeywordForSentences : function(s_keyword_id, arr) {
+        var _this = this;
+        
+        $.each(_this.temp_keywords, function(index, tempKeyword) {
+            // console.log(tempKeyword, 'the keyword');
+            
+            if (tempKeyword.id === s_keyword_id) { // check if the keyword id 
+            // console.log(tempKeyword.id, '===', s_keyword_id, ' = ', tempKeyword.id === s_keyword_id);
+            
+                // getht the sentence from othere similar keywords
+                $.each(tempKeyword.sentences, function(i, tempSentence){ 
+                    var sentenceExist = false;
+                    $.each(arr.sentences, function(index, value) {
+                        if (value.sentence === tempSentence.sentence) {
+                            // console.log('check on sentences -> ', value.sentence, '===', tempSentence.sentence, ' = ', value.sentences === tempSentence.sentence);
+                            sentenceExist = true;
+                        }
+                    });
+                    
+                    if (!sentenceExist) {
+                        $.each(arr.similar_sentences, function(index, value) {
+                            // console.log('check on similar_sentences -> ', value, '===', tempSentence.sentence, ' = ', tempSentence.sentence === value);
+                            if (tempSentence.sentence === value){
+                                sentenceExist = true;
+                            }
+                        });    
+                    }
+                    
+                    // console.log(tempSentence.sentence, ' is exist ', sentenceExist, 'final result');
+                    if(!sentenceExist){
+                        // console.log(arr, 'the arr current');
+                        arr.similar_sentences.push(tempSentence.sentence);
+                        // console.log(arr.similar_sentences, 'the sentences has beem updated');
+                    }
+                    
+                });
+            }
         });
         
-        
-        // FOR SENTENCES
-        var SentenceDoc = {
-          _id: '_design/sentences',
-          views: {
-            by_sentence: {
-              map: function (doc) { 
-                 emit(doc.keyword_id);
-              }.toString()
-            }
-          }
-        };
-        
-        this.sentences.put(SentenceDoc).then(function () {
-            return _this.sentences.query('sentences/by_sentence', {stale: 'update_after'});
-        }).catch(function (err) {
-          // some error (maybe a 409, because it already exists?)
-          console.log('Sentences views maybe a 409, because it already exists?', err);
-        });
-        
-        // SIMILAR KEYWORD
-        var SentenceDoc = {
-          _id: '_design/similarKeywords',
-          views: {
-            by_similar_keyword: {
-              map: function (doc) { 
-                 emit(doc.keyword_id);
-              }.toString()
-            }
-          }
-        };
-        
-        this.similar_keywords.put(SentenceDoc).then(function () {
-            return _this.similar_keywords.query('similarKeywords/by_similar_keyword', {stale: 'update_after'});
-        }).catch(function (err) {
-          // some error (maybe a 409, because it already exists?)
-          console.log('Sentences views maybe a 409, because it already exists?', err);
-        });
-        
-        
-        return;
+        // $.each(this.temp_sentences, function(index, tempSentence) {
+        //     var sentenceExist = false;
+            
+        //     if (tempSentence.keyword_id === s_keyword_id) { // check if the keyword id 
+                
+        //         $.each(arr.sentences, function(index, value) {
+        //             if (value.sentence === tempSentence.sentence) {
+        //                 // console.log('check on sentences -> ', value.sentence, '===', tempSentence.sentence, ' = ', value.sentences === tempSentence.sentence);
+        //                 sentenceExist = true;
+        //             }
+        //         });
+                
+        //         // console.log('if sentenceExist is = ', sentenceExist);
+        //         if (!sentenceExist) {
+        //             $.each(arr.similar_sentences, function(index, value) {
+        //                 // console.log('check on similar_sentences -> ', value, '===', tempSentence.sentence, ' = ', tempSentence.sentence === value);
+        //                 if (tempSentence.sentence === value){
+        //                     sentenceExist = true;
+        //                     // console.log(sentenceExist, 'check on similar_sentences');
+        //                 }
+        //             });    
+        //         }
+                
+        //         // console.log(tempSentence.sentence, ' is exist ', sentenceExist, 'final result');
+        //         if(!sentenceExist){
+        //             arr.similar_sentences.push(tempSentence.sentence);
+        //         }
+        //     }
+        // });
+        return arr;
     },
     showHistory: function() {
         return this.histories.allDocs({include_docs:true, limit: 10});
     },
     queryHistory: function(key) {
         var param = {startkey: key, endkey: key+'\uffff', limit: 10, include_docs: true};
-        // var mapReduce = {
-        //   map:function(doc){
-        //         emit(doc.keyword_id);
-        //     }
-        //   ,
-        //   reduce: '_count'
-        // };
         return this.histories.query(function (doc) {
                 if (doc.text) {
                     emit(doc.text.toLowerCase());
@@ -214,45 +260,38 @@ Models.prototype = {
     },
     showSentences: function(ids) {
         var param = {keys: ids, limit: 5, include_docs: true};
-        // var mapReduce = {
-        //   map:function(doc){
-        //         emit(doc.keyword_id);
-        //     }
-        //   ,
-        //   reduce: '_count'
-        // };
-        // return this.sentences.query(mapReduce, param);
-        
-        return _this.sentences.query('sentences/by_sentence', param);
+        return this.sentences.query(function(doc){
+                emit(doc.keyword_id);
+            }, param);
     },
     showSimilarKeywords: function(ids) {
         var param = {keys: ids, limit: 5, include_docs: true};
-        // var mapReduce = {
-        //   map:function(doc){
-        //         emit(doc.keyword_id_a);
-        //         emit(doc.keyword_id_b);
-        //     }
-        //   ,
-        //   reduce: '_count'
-        // };
-        // return this.similar_keywords.query(mapReduce, param);
-        
-        return this.similar_keywords.query('similarKeywords/by_similar_keyword', {stale: 'update_after'});
+        return this.similar_keywords.query(function(doc){
+                emit(doc.keyword_id_a);
+                emit(doc.keyword_id_b);
+            }, param);
     },
     getSearchKeywords: function(keyValue) {
-        var param = {startkey: keyValue, endkey: keyValue+'\uffff', include_docs: true};
-        // var mapReduce = {
-        //   map:function (doc) { 
-        //         if (doc.keyword) {
-        //             emit(doc.keyword.toLowerCase());
-        //         }
-        //     }
-        //   ,
-        //   reduce: '_count'
-        // };
-        // return this.keywords.query(mapReduce, param);
+        // var param = {startkey: keyValue, endkey: keyValue+'\uffff',include_docs: true};
+        // return this.keywords.query(function (doc) {
+        //     if (doc.keyword) {
+        //         emit(doc.keyword.toLowerCase());
+        //      }
+        // }, param);
         
-        return this.keywords.query('keywords/by_keyword',param);
+        var _this = this;
+        // this RegExp performs to compore the keyword that starts with the user inputed
+        var matcher = new RegExp( "^"+keyValue.replace( /[\-\[\]{}()*+?.,\\\^$|#\s]/g, "\\$&" ) , "i" );
+		var result = $.grep( _this.temp_keywords , function( value ) {
+			return matcher.test(value.keyword);
+		});
+		
+		if (result.length > 0) {
+		    return result.slice(0,5); // return the first 5 result.
+		} else {
+		    return [];
+		}
+		    
     },
     ifEmptyData: function(callback){
         _this = this;
@@ -268,7 +307,6 @@ Models.prototype = {
         });
     },
     start: function(downloadingCb,proceedCb){
-        // console.log('123123123123');
         if(this.initialized){
             console.log("Initialized");
             proceedCb();
@@ -323,7 +361,7 @@ View.prototype = {
         _this.$("#suggestion-box").css('width', _this.$elements.input.width() + $("#keyword-div .input-group-btn").width());  
     },
     init: function () {
-        // this._models.initializePersistentQueries();
+        this._models.compileDb();
         // $(".th-inner").addClass('hidden');
     },
     removeTablesData: function() {
@@ -353,30 +391,39 @@ View.prototype = {
                 _this.$elements.tables.histories.append('<li class="no-records-found">...</li>');
             }
         } else if (isSuggestion) {
-            var ids = _this.$.map(results, function (doc) {
-                return doc.id;
+            _this.$elements.remove.suggestions();
+
+            $.each(results.sentences, function(index, sentence) {
+                var list = "<li id='" + sentence.id + "' class='sg-li'>" + sentence.sentence + "</li>";
+                _this.$elements.tables.suggestions.append(list);
+                _this.showSimilarKeywordsBySentence(results);
             });
-            _this.getSentences(ids).then(function(sentences){
-                _this.$elements.remove.suggestions();
-                if (sentences.rows.length > 0) { // if query has data
-                    // console.log(sentences.rows, 'the result');
-                    _this.$.each(sentences.rows, function(index, value) {
-                        var doc = value.doc;
-                        var list = "<li id='" + doc._id + "' class='sg-li'>" + doc.sentence + "</li>";
-                        _this.$elements.tables.suggestions.append(list);
-                        _this.getSimilarKeywords(ids);
-                    });
-                } else {
-                    // show no records found
-                    _this.$elements.tables.suggestions.append('<li class="no-records-found">...</li>');
+            
+            
+            // var ids = _this.$.map(results, function (doc) {
+            //     return doc.id;
+            // });
+            // _this.getSentences(ids).then(function(sentences){
+            //     _this.$elements.remove.suggestions();
+            //     if (sentences.rows.length > 0) { // if query has data
+            //         // console.log(sentences.rows, 'the result');
+            //         _this.$.each(sentences.rows, function(index, value) {
+            //             var doc = value.doc;
+            //             var list = "<li id='" + doc._id + "' class='sg-li'>" + doc.sentence + "</li>";
+            //             _this.$elements.tables.suggestions.append(list);
+            //             _this.getSimilarKeywords(ids);
+            //         });
+            //     } else {
+            //         // show no records found
+            //         _this.$elements.tables.suggestions.append('<li class="no-records-found">...</li>');
                     
-                    _this.$elements.suggestionWrapper.removeClass('hidden');
-                    _this.resizeSuggestionWrapper();
-                    _this.listOnClick();
-                }
-            }).catch(function (err) {
-                console.error('文章のクエリー時にエラーが発生しました', err);
-            });
+            //         _this.$elements.suggestionWrapper.removeClass('hidden');
+            //         _this.resizeSuggestionWrapper();
+            //         _this.listOnClick();
+            //     }
+            // }).catch(function (err) {
+            //     console.error('文章のクエリー時にエラーが発生しました', err);
+            // });
         }
     },
     getSentences: function(ids) {
@@ -477,15 +524,49 @@ View.prototype = {
         var _this = this;
         var key = _this.$elements.input.val().toLowerCase();
         
-        // if (key.trim() === ''){
+        if (key.trim() === ''){
             _this.$elements.remove.suggestions();
-        // } else {
-            _this._models.getSearchKeywords(key).then(function(result){
-                console.log(result.rows , 'query Keywords()');
-                _this.appendTableData(result.rows, false, true);
-            }).catch(function (err) {
-                console.error('エラー発生', err);
-            });
+        } else {
+            var result = _this._models.getSearchKeywords(key);
+            var arrSentences = [], arrSimiliarSentences = [];
+            // console.log(result, 'search result');
+            
+            if (result.length > 0) {
+                $.each(result, function(i,val){
+                    $.each(val.sentences, function(i,sentence){
+                       arrSentences.push({id:sentence.id,sentence:sentence.sentence}); 
+                    });
+                    $.each(val.similar_sentences, function(i,v_similar_sentence){
+                       arrSimiliarSentences.push(v_similar_sentence);
+                    });
+                });
+            
+                _this.appendTableData(
+                    {
+                        sentences: arrSentences.slice(0,5),
+                        similar_sentences: arrSimiliarSentences.slice(0,5)
+                    },
+                    false, 
+                    true
+                );
+            } else {
+                _this.$elements.remove.suggestions();
+                // show no records found
+                _this.$elements.tables.suggestions.append('<li class="no-records-found">...</li>');
+                
+                _this.$elements.suggestionWrapper.removeClass('hidden');
+                _this.resizeSuggestionWrapper();
+                _this.listOnClick();
+            }
+                        
+                        
+            
+            // .then(function(result){
+            //     // console.log(result.rows , 'query Keywords()');
+            //     _this.appendTableData(result.rows, false, true);
+            // }).catch(function (err) {
+            //     console.error('エラー発生', err);
+            // });
             
             if (filterHistory) {
                 _this._models.queryHistory(key).then(function(result){
@@ -497,7 +578,7 @@ View.prototype = {
                     console.error('オートコンプリートでエラーが発生しました。', err);
                 });
             }
-        // }
+        }
     },
 }
 
@@ -548,8 +629,7 @@ function Controller($elem, view, models) {
         };
         proceedSearch();
         
-        if (!models.initialized) {
-            console.log(models.initialized, ' is models.initialized');
+        if(!models.initialized)
             models.start(
                 function(){ 
                     $('#suggestion-list li').remove();
@@ -558,11 +638,11 @@ function Controller($elem, view, models) {
                 function(){
                     $('#suggestion-list li').remove();
                     $('#suggestion-list').append('<li class="no-records-found sg-li">...</li>');
-                    models.initializePersistentQueries(proceedSearch);
+                    models.compileDb(proceedSearch);
                     // proceedSearch();
                 }
             );
-        }
+        
 
     });
 }
