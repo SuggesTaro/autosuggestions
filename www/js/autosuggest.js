@@ -97,8 +97,12 @@ function Models(url) {
     
     this.similar_keywords = new PouchDB("similar_keywords");
     
+    // check if isDbDownloaded 
+    if (!JSON.parse(localStorage.getItem('isDbDownloaded'))) 
+        localStorage.setItem('isDbDownloaded', JSON.stringify(false));
     
-    this.initialized = false;
+    this.initialized = JSON.parse(localStorage.getItem('isDbDownloaded'));
+    
 }
 
 Models.prototype = {
@@ -107,98 +111,102 @@ Models.prototype = {
         // Persistentクエリーを利用し、PouchDBのクエリーを高速化ができます。
         // 10から100倍高速化するとのこと
         // https://pouchdb.com/2014/05/01/secondary-indexes-have-landed-in-pouchdb.html
-        
+            
         var _this = this;
+        var isInitialized = JSON.parse(localStorage.getItem('isDbDownloaded'));
         
-        // FOR HISTORY
-        var HistoryDoc = {
-          _id: '_design/histories',
-          views: {
-            by_history: {
-              map: function (doc) {
-                    emit(doc.text.toLowerCase());
-                }.toString()
-            }
-          }
-        };
-        
-        _this.histories.put(HistoryDoc).then(function () {
-            return _this.histories.query('histories/by_history', {stale: 'update_after'});
-        }).catch(function (err) {
-            // some error (maybe a 409, because it already exists?)
-            console.error('History views maybe a 409, because it already exists?', err);
-        });
-    
-        // キーワードのクエリー初期化
-        var keywordDoc = {
-          _id: '_design/keywords',
-          views: {
-            by_keyword: {
-              map: function (doc) { 
-                  if (doc.keyword) {
-                    emit(doc.keyword.toLowerCase());
-                 }
-              }.toString()
-            }
-          }
-        };
-        
-        
-        
-        // sentences のクエリー初期化
-        var SentenceDoc = {
-          _id: '_design/sentences',
-          views: {
-            by_sentence: {
-              map: function (doc) { 
-                 emit(doc.keyword_id);
-              }.toString()
-            }
-          }
-        };
-        
-        
-        // 類義のクエリー初期化
-        var SimilarKeywordDoc = {
-          _id: '_design/similarKeywords',
-          views: {
-            by_similar_keyword: {
-              map: function (doc) { 
-                 emit(doc.keyword_id_a);
-                 emit(doc.keyword_id_b);
-              }.toString()
-            }
-          }
-        };
-        
-        _this.keywords.put(keywordDoc).then(function () {
-            _this.keywords.query('keywords/by_keyword', {stale: 'update_after'}).then(function(){
-                _this.sentences.put(SentenceDoc).then(function () {
-                    _this.sentences.query('sentences/by_sentence', {stale: 'update_after'}).then(function(){
-                        _this.similar_keywords.put(SimilarKeywordDoc).then(function () {
-                            _this.similar_keywords.query('similarKeywords/by_similar_keyword', {stale: 'update_after'}).then(function(){
-                                // proceedCb is a fucntion after the views has been create
-                                // this is to eleminate some code after the views of keyword, similar_keywords and sentences created
-                                if (proceedCb) 
-                                    proceedCb();
-                                
-                                
-                                return;
-                            });
-                        }).catch(function (err) {
-                          // some error (maybe a 409, because it already exists?)
-                          console.error('Sentences views maybe a 409, because it already exists?', err);
-                        });
-                    }); // end of sentence firs query
-                }).catch(function (err) {
-                  // some error (maybe a 409, because it already exists?)
-                  console.error('Sentences views maybe a 409, because it already exists?', err);
-                });
+        if (isInitialized) {
+            
+            // FOR HISTORY
+            var HistoryDoc = {
+              _id: '_design/histories',
+              views: {
+                by_history: {
+                  map: function (doc) {
+                        emit(doc.text.toLowerCase());
+                    }.toString()
+                }
+              }
+            };
+            
+            _this.histories.put(HistoryDoc).then(function () {
+                return _this.histories.query('histories/by_history', {stale: 'update_after'});
+            }).catch(function (err) {
+                // some error (maybe a 409, because it already exists?)
+                console.error('History views maybe a 409, because it already exists?', err);
             });
-        }).catch(function (err) {
-            // some error (maybe a 409, because it already exists?)
-            console.error('Keywords views maybe a 409, because it already exists?', err);
-        });
+        
+            // キーワードのクエリー初期化
+            var keywordDoc = {
+              _id: '_design/keywords',
+              views: {
+                by_keyword: {
+                  map: function (doc) { 
+                      if (doc.keyword) {
+                        emit(doc.keyword.toLowerCase());
+                     }
+                  }.toString()
+                }
+              }
+            };
+            
+            
+            
+            // sentences のクエリー初期化
+            var SentenceDoc = {
+              _id: '_design/sentences',
+              views: {
+                by_sentence: {
+                  map: function (doc) { 
+                     emit(doc.keyword_id);
+                  }.toString()
+                }
+              }
+            };
+            
+            
+            // 類義のクエリー初期化
+            var SimilarKeywordDoc = {
+              _id: '_design/similarKeywords',
+              views: {
+                by_similar_keyword: {
+                  map: function (doc) { 
+                     emit(doc.keyword_id_a);
+                     emit(doc.keyword_id_b);
+                  }.toString()
+                }
+              }
+            };
+            
+            _this.keywords.put(keywordDoc).then(function () {
+                _this.keywords.query('keywords/by_keyword', {stale: 'update_after'}).then(function(){
+                    _this.sentences.put(SentenceDoc).then(function () {
+                        _this.sentences.query('sentences/by_sentence', {stale: 'update_after'}).then(function(){
+                            _this.similar_keywords.put(SimilarKeywordDoc).then(function () {
+                                _this.similar_keywords.query('similarKeywords/by_similar_keyword', {stale: 'update_after'}).then(function(){
+                                    // proceedCb is a fucntion after the views has been create
+                                    // this is to eleminate some code after the views of keyword, similar_keywords and sentences created
+                                    if (proceedCb) 
+                                        proceedCb();
+                                    
+                                    
+                                    return;
+                                });
+                            }).catch(function (err) {
+                              // some error (maybe a 409, because it already exists?)
+                              console.error('Sentences views maybe a 409, because it already exists?', err);
+                            });
+                        }); // end of sentence firs query
+                    }).catch(function (err) {
+                      // some error (maybe a 409, because it already exists?)
+                      console.error('Sentences views maybe a 409, because it already exists?', err);
+                    });
+                });
+            }).catch(function (err) {
+                // some error (maybe a 409, because it already exists?)
+                console.error('Keywords views maybe a 409, because it already exists?', err);
+            });   
+        }
     },
     showHistory: function() {
         return this.histories.allDocs({include_docs:true, limit: 10});
@@ -212,7 +220,7 @@ Models.prototype = {
     },
     showSentences: function(ids) {
         var param = {keys: ids, limit: 5, include_docs: true};
-        return _this.sentences.query('sentences/by_sentence', param);
+        return this.sentences.query('sentences/by_sentence', param);
     },
     showSimilarKeywords: function(ids) {
         var param = {keys: ids, limit: 5, include_docs: true};
@@ -228,7 +236,7 @@ Models.prototype = {
             _this.similar_keywords.info().then(function(sk_result){
                 _this.sentences.info().then(function(s_result){
                     console.log(kw_result.doc_count, ' + ', sk_result.doc_count, ' + ', s_result.doc_count, ' = ', kw_result.doc_count+sk_result.doc_count+s_result.doc_count);
-                    if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0){
+                    if((kw_result.doc_count+sk_result.doc_count+s_result.doc_count) == 0 || !JSON.parse(localStorage.getItem('isDbDownloaded'))){
                         callback();
                     }
                 });
@@ -246,8 +254,9 @@ Models.prototype = {
             console.log("Empty data");
             downloadingCb();
             initialize(function(){
-               proceedCb();
+               localStorage.setItem('isDbDownloaded', true);
                _this.initialized = true;
+               proceedCb();
             });
                  
         });
